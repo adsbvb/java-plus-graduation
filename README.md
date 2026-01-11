@@ -76,7 +76,7 @@ like=true — поставить лайк;
 
 like=false — поставить дизлайк.
 
-**Ответ (201 Updated):**
+**Ответ 200:**
 
 **Параметры URL:**
 
@@ -86,66 +86,8 @@ like=false — поставить дизлайк.
 
 {commentId} — ID комментария.
 
-#### 4. Создание вложенного комментария (ответа на комментарий)
-___
-**Метод:** `POST`
-**Endpoint:** `/users/{userId}/comments/{commentId}`
-
-**Запрос:**
-
-```json
-{
-  "text": "text"
-}
-```
-**Ответ (201 Created):**
-
-```json
-{
-  "id": 2,
-  "text": "text",
-  "comment": "comment",
-  "create": "yyyy-MM-dd HH:mm:ss",
-  "author": "author"
-}
-```
-**Параметры:**
-
-{userId} — ID пользователя, пишущего ответ;
-
-{commentId} — ID родительского комментария.
-
-#### 5. Изменение вложенного комментария
-___
-**Метод:** `PATCH`
-**Endpoint:** `/users/{userId}/comments/{commentId}`
-
-**Запрос:**
-
-```json
-{
-  "text": "text"
-}
-```
-**Ответ 200:**
-
-```json
-{
-  "id": 2,
-  "text": "text",
-  "comment": "comment",
-  "create": "yyyy-MM-dd HH:mm:ss",
-  "author": "author"
-}
-```
-**Параметры:**
-
-{userId} — ID пользователя;
-
-{commentId} — ID вложенного комментария.
-
 ### Public API (без авторизации)
-#### 6. Получение комментариев к событию
+#### 4. Получение комментариев к событию
 ___
 **Метод:** `GET`
 **Endpoint:** `/events/{eventId}/comments?from=0&size=100`
@@ -181,7 +123,7 @@ ___
 {size} — количество получаемых комментариев
 
 ### Admin API (для администраторов)
-#### 7. Удаление комментария
+#### 5. Удаление комментария
 ___
 **Метод:** `DELETE`
 **Endpoint:** `/admin/comments/{commentId}`
