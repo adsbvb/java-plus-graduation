@@ -1,6 +1,6 @@
 # Управление комментариями (Comments API)
 
-API для работы с комментариями к событиям и вложенным комментариям.
+API для работы с комментариями к событиям.
 
 ## Endpoints
 
@@ -23,7 +23,7 @@ ___
 {
   "id": 2,
   "text": "text",
-  "event": "event",
+  "event": 1,
   "create": "yyyy-MM-dd HH:mm:ss",
   "author": "author"
 }
@@ -52,7 +52,7 @@ ___
 {
   "id": 2,
   "text": "text",
-  "event": "event",
+  "event": 1,
   "create": "yyyy-MM-dd HH:mm:ss",
   "author": "author"
 }
@@ -65,7 +65,7 @@ ___
 
 {commentId} — ID редактируемого комментария.
 
-#### 3. Постановка лайка/дизлайка комментарию
+#### 3. Постановка лайка комментарию
 ___
 **Метод:** `POST`
 **Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}/likes`
@@ -95,7 +95,7 @@ ___
   {
     "id": 2,
     "text": "text",
-    "comment": "comment",
+    "event": 1,
     "create": "yyyy-MM-dd HH:mm:ss",
     "author": "author",
     "like": 10
@@ -103,7 +103,7 @@ ___
   {
     "id": 3,
     "text": "text",
-    "comment": "comment",
+    "event": 1,
     "create": "yyyy-MM-dd HH:mm:ss",
     "author": "author",
     "like": 5
@@ -137,9 +137,11 @@ ___
 ## Формат данных
 ___
 ```
+id — идентификатор коментария (число);
+
 text — текст комментария (строка);
 
-event — идентификатор события (строка/число);
+event — идентификатор события (число);
 
 comment — идентификатор родительского комментария (для вложенных комментариев);
 
