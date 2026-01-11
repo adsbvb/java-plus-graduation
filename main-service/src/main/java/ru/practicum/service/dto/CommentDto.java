@@ -16,10 +16,10 @@ public class CommentDto {
 
     Long eventId;
 
-    String author;
+    String authorName;
 
     @JsonFormat(pattern = Constant.DATE_TIME_FORMAT)
     LocalDateTime create;
 
-    Long like = 0L;
+    Integer like = 0;
 }
