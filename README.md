@@ -239,10 +239,10 @@ ___
 ```
 ### 3. Поставить лайк комментарию:
 
-`PATCH /users/123/events/456/comments/789?like=true`
+`POST /users/123/events/456/comments/789/likes?like=true`
 ### 4. Получить комментарии к событию:
 
-`GET /events/456/comments`
+`GET /events/{eventId}/comments?from=0&size=100`
 ### 5. Удалить комментарий (админ):
 
 `DELETE /admin/comments/789`
