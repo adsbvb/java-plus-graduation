@@ -68,13 +68,7 @@ ___
 #### 3. Постановка лайка/дизлайка комментарию
 ___
 **Метод:** `POST`
-**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}/likes?like=true`
-
-**Параметры запроса:**
-
-like=true — поставить лайк;
-
-like=false — поставить дизлайк.
+**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}/likes`
 
 **Ответ 200:**
 
@@ -103,14 +97,16 @@ ___
     "text": "text",
     "comment": "comment",
     "create": "yyyy-MM-dd HH:mm:ss",
-    "author": "author"
+    "author": "author",
+    "like": 10
   },
   {
     "id": 3,
     "text": "text",
     "comment": "comment",
     "create": "yyyy-MM-dd HH:mm:ss",
-    "author": "author"
+    "author": "author",
+    "like": 5
   }
 ]
 ```
@@ -181,7 +177,7 @@ ___
 ```
 ### 3. Поставить лайк комментарию:
 
-`POST /users/123/events/456/comments/789/likes?like=true`
+`POST /users/123/events/456/comments/789/likes`
 ### 4. Получить комментарии к событию:
 
 `GET /events/{eventId}/comments?from=0&size=100`
