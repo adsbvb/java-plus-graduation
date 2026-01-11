@@ -55,13 +55,12 @@ CREATE TABLE IF NOT EXISTS comments (
     event_id    BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     author_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     text        TEXT NOT NULL,
-    created_on  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+    created_on  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    likes_count INTEGER DEFAULT 0 CHECK (likes_count >= 0)
     );
 
 CREATE TABLE IF NOT EXISTS comment_likes (
     comment_id  BIGINT NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
     user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    is_like     BOOLEAN NOT NULL,
-    created_on  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     PRIMARY KEY (comment_id, user_id)
     );
