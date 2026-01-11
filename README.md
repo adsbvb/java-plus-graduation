@@ -1,6 +1,6 @@
 # Управление комментариями (Comments API)
 
-API для работы с комментариями к событиям и вложенным комментариям.
+API для работы с комментариями к событиям.
 
 ## Endpoints
 
@@ -21,8 +21,9 @@ ___
 
 ```json
 {
+  "id": 2,
   "text": "text",
-  "event": "event",
+  "event": 1,
   "create": "yyyy-MM-dd HH:mm:ss",
   "author": "author"
 }
@@ -45,12 +46,13 @@ ___
   "text": "text"
 }
 ```
-**Ответ (201 Updated):**
+**Ответ 200:**
 
 ```json
 {
+  "id": 2,
   "text": "text",
-  "event": "event",
+  "event": 1,
   "create": "yyyy-MM-dd HH:mm:ss",
   "author": "author"
 }
@@ -63,18 +65,32 @@ ___
 
 {commentId} — ID редактируемого комментария.
 
-#### 3. Постановка лайка/дизлайка комментарию
+#### 3. Удаление комментария пользователем
 ___
-**Метод:** `PATCH`
-**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}?like=true`
+**Метод:** `DELETE`
+**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}`
 
-**Параметры запроса:**
+**Ответ:**
 
-like=true — поставить лайк;
+204 (No Content) — комментарий успешно удалён;
 
-like=false — поставить дизлайк.
+404 Not Found — комментарий не найден.
 
-**Ответ (201 Updated): 201**
+**Параметры:**
+
+{userId} — ID пользователя;
+
+{eventId} — ID события;
+
+{commentId} — ID удаляемого комментария.
+
+
+#### 4. Постановка лайка комментарию
+___
+**Метод:** `POST`
+**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}/likes`
+
+**Ответ 200:**
 
 **Параметры URL:**
 
@@ -84,83 +100,33 @@ like=false — поставить дизлайк.
 
 {commentId} — ID комментария.
 
-#### 4. Создание вложенного комментария (ответа на комментарий)
-___
-**Метод:** `POST`
-**Endpoint:** `/users/{userId}/comments/{commentId}`
-
-**Запрос:**
-
-```json
-{
-  "text": "text"
-}
-```
-**Ответ (201 Created):**
-
-```json
-{
-  "text": "text",
-  "comment": "comment",
-  "create": "yyyy-MM-dd HH:mm:ss",
-  "author": "author"
-}
-```
-**Параметры:**
-
-{userId} — ID пользователя, пишущего ответ;
-
-{commentId} — ID родительского комментария.
-
-#### 5. Изменение вложенного комментария
-___
-**Метод:** `PATCH`
-**Endpoint:** `/users/{userId}/comments/{commentId}`
-
-**Запрос:**
-
-```json
-{
-  "text": "text"
-}
-```
-**Ответ (201 Updated):**
-
-```json
-{
-  "text": "text",
-  "comment": "comment",
-  "create": "yyyy-MM-dd HH:mm:ss",
-  "author": "author"
-}
-```
-**Параметры:**
-
-{userId} — ID пользователя;
-
-{commentId} — ID вложенного комментария.
-
 ### Public API (без авторизации)
-#### 6. Получение комментариев к событию
+#### 5. Получение комментариев к событию
 ___
 **Метод:** `GET`
-**Endpoint:** `/events/{eventId}/comments`
+**Endpoint:** `/events/{eventId}/comments?from=0&size=100`
 
 **Ответ (200 OK):**
+
+Данные ответа должны сортироваться по дате
 
 ```json
 [
   {
+    "id": 2,
     "text": "text",
-    "comment": "comment",
+    "event": 1,
     "create": "yyyy-MM-dd HH:mm:ss",
-    "author": "author"
+    "author": "author",
+    "like": 10
   },
   {
+    "id": 3,
     "text": "text",
-    "comment": "comment",
+    "event": 1,
     "create": "yyyy-MM-dd HH:mm:ss",
-    "author": "author"
+    "author": "author",
+    "like": 5
   }
 ]
 ```
@@ -168,15 +134,19 @@ ___
 
 {eventId} — ID события, для которого запрашиваются комментарии.
 
+{from} — начало получение комментариев
+
+{size} — количество получаемых комментариев
+
 ### Admin API (для администраторов)
-#### 7. Удаление комментария
+#### 6. Удаление комментария
 ___
 **Метод:** `DELETE`
 **Endpoint:** `/admin/comments/{commentId}`
 
 **Ответ:**
 
-200 OK — комментарий успешно удалён;
+204 (No Content) — комментарий успешно удалён;
 
 404 Not Found — комментарий не найден.
 
@@ -187,11 +157,11 @@ ___
 ## Формат данных
 ___
 ```
+id — идентификатор коментария (число);
+
 text — текст комментария (строка);
 
-event — идентификатор события (строка/число);
-
-comment — идентификатор родительского комментария (для вложенных комментариев);
+event — идентификатор события (число);
 
 create — дата и время создания в формате yyyy-MM-dd HH:mm:ss;
 
@@ -201,9 +171,9 @@ author — имя автора комментария (строка).
 ___
 **201 Created** — ресурс успешно создан;
 
-2 Newton Updated — ресурс успешно обновлён;
+**200 Newton Updated** — ресурс успешно обновлён;
 
-**200 OK** — запрос выполнен успешно (для DELETE);
+**204 (No Content)** — запрос выполнен успешно (для DELETE);
 
 **404 Not Found** — ресурс не найден.
 
@@ -225,12 +195,15 @@ ___
 "text": "Исправленный текст"
 }
 ```
-### 3. Поставить лайк комментарию:
+### 3. Удалить комментарий (пользователь):
 
-`PATCH /users/123/events/456/comments/789?like=true`
-### 4. Получить комментарии к событию:
+`DELETE /users/26/events/4/comments/789`
+### 4. Поставить лайк комментарию:
 
-`GET /events/456/comments`
-### 5. Удалить комментарий (админ):
+`POST /users/123/events/456/comments/789/likes`
+### 5. Получить комментарии к событию:
+
+`GET /events/{eventId}/comments?from=0&size=100`
+### 6. Удалить комментарий (админ):
 
 `DELETE /admin/comments/789`
