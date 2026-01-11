@@ -33,6 +33,10 @@ public class Comment {
     @Column(name = "created_on")
     LocalDateTime createdOn;
 
+    @Column(name = "likes_count")
+    @Builder.Default
+    private Integer likesCount = 0;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
