@@ -57,3 +57,11 @@ CREATE TABLE IF NOT EXISTS comments (
     text        TEXT NOT NULL,
     created_on  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
     );
+
+CREATE TABLE IF NOT EXISTS comment_likes (
+    comment_id  BIGINT NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    is_like     BOOLEAN NOT NULL,
+    created_on  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (comment_id, user_id)
+    );
