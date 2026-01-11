@@ -21,6 +21,7 @@ ___
 
 ```json
 {
+  "id": 2,
   "text": "text",
   "event": "event",
   "create": "yyyy-MM-dd HH:mm:ss",
@@ -49,6 +50,7 @@ ___
 
 ```json
 {
+  "id": 2,
   "text": "text",
   "event": "event",
   "create": "yyyy-MM-dd HH:mm:ss",
@@ -66,7 +68,7 @@ ___
 #### 3. Постановка лайка/дизлайка комментарию
 ___
 **Метод:** `POST`
-**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}?like=true`
+**Endpoint:** `/users/{userId}/events/{eventId}/comments/{commentId}/likes?like=true`
 
 **Параметры запроса:**
 
@@ -100,6 +102,7 @@ ___
 
 ```json
 {
+  "id": 2,
   "text": "text",
   "comment": "comment",
   "create": "yyyy-MM-dd HH:mm:ss",
@@ -128,6 +131,7 @@ ___
 
 ```json
 {
+  "id": 2,
   "text": "text",
   "comment": "comment",
   "create": "yyyy-MM-dd HH:mm:ss",
@@ -144,19 +148,21 @@ ___
 #### 6. Получение комментариев к событию
 ___
 **Метод:** `GET`
-**Endpoint:** `/events/{eventId}/comments`
+**Endpoint:** `/events/{eventId}/comments?from=0&size=100`
 
 **Ответ (200 OK):**
 
 ```json
 [
   {
+    "id": 2,
     "text": "text",
     "comment": "comment",
     "create": "yyyy-MM-dd HH:mm:ss",
     "author": "author"
   },
   {
+    "id": 3,
     "text": "text",
     "comment": "comment",
     "create": "yyyy-MM-dd HH:mm:ss",
@@ -167,6 +173,10 @@ ___
 **Параметры:**
 
 {eventId} — ID события, для которого запрашиваются комментарии.
+
+{from} — начало получение комментариев
+
+{size} — количество получаемых комментариев
 
 ### Admin API (для администраторов)
 #### 7. Удаление комментария
