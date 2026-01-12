@@ -23,5 +23,6 @@ public class CommentDto {
     @JsonFormat(pattern = Constant.DATE_TIME_FORMAT)
     LocalDateTime create;
 
+    @Builder.Default
     Integer like = 0;
 }
