@@ -1,6 +1,7 @@
 package ru.practicum.service.mapper;
 
 import lombok.experimental.UtilityClass;
+import ru.practicum.service.dto.CommentAdminDto;
 import ru.practicum.service.dto.CommentDto;
 import ru.practicum.service.dto.CommentRequestDto;
 import ru.practicum.service.model.Comment;
@@ -23,6 +24,17 @@ public class CommentMapper {
                 .text(comment.getText())
                 .authorName(comment.getAuthor().getName())
                 .eventId(comment.getEvent().getId())
+                .build();
+    }
+
+    public CommentAdminDto commentToCommentAdminDto(Comment comment) {
+        return CommentAdminDto.builder()
+                .id(comment.getId())
+                .text(comment.getText())
+                .authorId(comment.getAuthor().getId())
+                .eventId(comment.getEvent().getId())
+                .createdOn(comment.getCreatedOn())
+                .likesCount(comment.getLikesCount())
                 .build();
     }
 }
