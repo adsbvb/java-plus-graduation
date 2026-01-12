@@ -29,10 +29,10 @@ public class PrivateCommentsController {
     }
 
     @PostMapping("/{commentId}/likes")
-    public ResponseEntity<Void> addLikeComment(@PathVariable(value = "userId") Long userId,
+    public ResponseEntity<Void> addAndDeleteLikeComment(@PathVariable(value = "userId") Long userId,
                                                @PathVariable(value = "eventId") Long eventId,
                                                @PathVariable(value = "commentId") Long commentId) {
-        privateServiceComments.addLikeComment(userId, eventId, commentId);
+        privateServiceComments.addAndDeleteLikeComment(userId, eventId, commentId);
         return ResponseEntity.ok().body(null);
     }
 

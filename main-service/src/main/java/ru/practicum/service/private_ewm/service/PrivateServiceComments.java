@@ -10,5 +10,5 @@ public interface PrivateServiceComments {
 
     void deleteComment(Long userId, Long eventId, Long commentId);
 
-    void addLikeComment(Long userId, Long eventId, Long commentId);
+    void addAndDeleteLikeComment(Long userId, Long eventId, Long commentId);
 }
