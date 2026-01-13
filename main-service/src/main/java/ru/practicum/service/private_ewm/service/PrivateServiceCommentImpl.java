@@ -68,7 +68,11 @@ public class PrivateServiceCommentImpl implements PrivateServiceComments {
                 .orElseThrow(() -> new NotFoundException("Такого события не найдено."));
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Комментарий не найден."));
-        commentRepository.delete(comment);
+        if (comment.getAuthor().getId().equals(userId)) {
+            commentRepository.delete(comment);
+        } else {
+            throw new ConflictException("Невозможно удалить чужой комментарий.");
+        }
     }
 
     @Override
