@@ -18,7 +18,7 @@ import ru.practicum.service.private_ewm.service.PrivateServiceComments;
 @RequiredArgsConstructor
 @RequestMapping(path = "/users/{userId}/events/{eventId}/comments")
 public class PrivateCommentsController {
-    private PrivateServiceComments privateServiceComments;
+    private final PrivateServiceComments privateServiceComments;
 
     @PostMapping
     public ResponseEntity<CommentDto> createComment(@PathVariable(value = "userId") Long userId,

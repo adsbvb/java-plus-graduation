@@ -24,6 +24,7 @@ public class CommentMapper {
                 .text(comment.getText())
                 .authorName(comment.getAuthor().getName())
                 .eventId(comment.getEvent().getId())
+                .create(comment.getCreatedOn())
                 .build();
     }
 

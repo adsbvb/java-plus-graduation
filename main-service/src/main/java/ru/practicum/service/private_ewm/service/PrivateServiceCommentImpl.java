@@ -15,6 +15,7 @@ import ru.practicum.service.model.Comment;
 import ru.practicum.service.model.CommentLike;
 import ru.practicum.service.model.Event;
 import ru.practicum.service.model.User;
+import ru.practicum.service.model.enums.State;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,12 @@ public class PrivateServiceCommentImpl implements PrivateServiceComments {
                 .orElseThrow(() -> new NotFoundException("Такого пользователя не существует."));
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Такого события не найдено."));
+        if (event.getState().equals(State.PENDING)) {
+            throw new NotFoundException("Такого события не найдено.");
+        }
+        if (event.getInitiator().getId().equals(userId)) {
+            throw new ConflictException("Нельзя комментировать свое событие.");
+        }
 
         return CommentMapper
                 .commentToCommentDto(
@@ -42,6 +49,9 @@ public class PrivateServiceCommentImpl implements PrivateServiceComments {
                 .orElseThrow(() -> new NotFoundException("Такого пользователя не существует."));
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Такого события не найдено."));
+        if (event.getInitiator().getId().equals(userId)) {
+            throw new ConflictException("Нельзя комментировать свое событие.");
+        }
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Комментарий не найден."));
 
