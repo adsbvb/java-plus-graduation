@@ -19,21 +19,19 @@ import java.util.List;
 public class AdminCommentServiceImpl implements AdminCommentService {
     private final CommentRepository commentRepository;
 
-
-
     @Override
     public List<CommentAdminDto> getAllComments(Long eventId, Long userId, String text, Pageable pageable) {
 
         List<Comment> comments;
 
         if (eventId != null && userId != null) {
-            comments = commentRepository.findAllByEvent_IdAndAuthor_Id(eventId, userId, pageable);
+            comments = commentRepository.findAllByEventIdAndAuthorIdOrderByCreatedOnDesc(eventId, userId, pageable);
         } else if (eventId != null) {
-            comments = commentRepository.findAllByEvent_Id(eventId, pageable);
+            comments = commentRepository.findAllByEventIdOrderByCreatedOnDesc(eventId, pageable);
         } else if (userId != null) {
-            comments = commentRepository.findAllByAuthor_Id(userId, pageable);
+            comments = commentRepository.findAllByAuthorIdOrderByCreatedOnDesc(userId, pageable);
         } else if (text != null && !text.isEmpty()) {
-            comments = commentRepository.findAllByText(text, pageable);
+            comments = commentRepository.findByTextContainingIgnoreCaseOrderByCreatedOnDesc(text, pageable);
         } else {
             comments = commentRepository.findAll(pageable).getContent();
 
