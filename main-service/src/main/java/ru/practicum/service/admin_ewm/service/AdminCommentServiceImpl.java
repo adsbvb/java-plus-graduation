@@ -27,7 +27,7 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         if (eventId != null && userId != null) {
             comments = commentRepository.findAllByEventIdAndAuthorIdOrderByCreatedOnDesc(eventId, userId, pageable);
         } else if (eventId != null) {
-            comments = commentRepository.findAllByEventIdOrderByCreatedOnDesc(eventId, pageable);
+            comments = commentRepository.findByEvent_IdOrderByCreatedOnDesc(eventId, pageable);
         } else if (userId != null) {
             comments = commentRepository.findAllByAuthorIdOrderByCreatedOnDesc(userId, pageable);
         } else if (text != null && !text.isEmpty()) {
