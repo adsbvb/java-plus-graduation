@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "comments")
@@ -37,6 +39,11 @@ public class Comment {
     @Column(name = "likes_count")
     @Builder.Default
     private Integer likesCount = 0;
+
+    @OneToMany(mappedBy = "comment")
+    @ToString.Exclude
+    @Builder.Default
+    private Set<CommentLike> likes = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {
