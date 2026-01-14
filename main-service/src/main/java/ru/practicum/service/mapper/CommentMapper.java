@@ -38,4 +38,15 @@ public class CommentMapper {
                 .likesCount(comment.getLikesCount())
                 .build();
     }
+
+    public CommentDto toCommentDtoWithLikes(Comment comment, Integer likes) {
+        return CommentDto.builder()
+                .id(comment.getId())
+                .text(comment.getText())
+                .authorName(comment.getAuthor().getName())
+                .eventId(comment.getEvent().getId())
+                .create(comment.getCreatedOn())
+                .like(likes)
+                .build();
+    }
 }

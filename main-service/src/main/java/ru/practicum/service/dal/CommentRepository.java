@@ -14,6 +14,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findAllByEvent_Id(Long eventId,  Pageable pageable);
 
+    List<Comment> findByEvent_IdOrderByCreatedOnDesc(Long eventId, Pageable pageable);
+
     List<Comment> findAllByEvent_IdAndAuthor_Id(Long eventId, Long authorId, Pageable pageable);
 
     @Query("SELECT c FROM Comment c WHERE LOWER(c.text) LIKE LOWER(CONCAT('%', :text, '%')) ORDER BY c.createdOn DESC")
