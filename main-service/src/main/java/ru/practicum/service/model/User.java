@@ -32,16 +32,6 @@ public class User {
     @Builder.Default
     private Set<Request> requests = new HashSet<>();
 
-    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
-    @ToString.Exclude
-    @Builder.Default
-    private Set<Comment> comments = new HashSet<>();
-
-    @OneToMany(mappedBy = "user")
-    @ToString.Exclude
-    @Builder.Default
-    private Set<CommentLike> commentLikes = new HashSet<>();
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

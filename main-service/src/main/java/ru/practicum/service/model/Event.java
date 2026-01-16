@@ -80,11 +80,6 @@ public class Event {
     @Builder.Default
     private Set<Compilation> compilations = new HashSet<>();
 
-    @OneToMany(mappedBy = "event")
-    @ToString.Exclude
-    @Builder.Default
-    private Set<Comment> comments = new HashSet<>();
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
