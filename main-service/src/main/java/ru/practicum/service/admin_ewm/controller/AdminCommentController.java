@@ -35,7 +35,7 @@ public class AdminCommentController {
 
     @GetMapping("/{commentId}")
     public CommentAdminDto findOne(
-            @RequestParam Long commentId
+            @PathVariable(name = "commentId") Long commentId
     ) {
         log.info("GET /admin/comments/{}", commentId);
         return service.getCommentById(commentId);

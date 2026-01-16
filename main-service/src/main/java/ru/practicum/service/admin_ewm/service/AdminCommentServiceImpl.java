@@ -34,7 +34,6 @@ public class AdminCommentServiceImpl implements AdminCommentService {
             comments = commentRepository.findByTextContainingIgnoreCaseOrderByCreatedOnDesc(text, pageable);
         } else {
             comments = commentRepository.findAll(pageable).getContent();
-
         }
 
         log.info("Найден список комментариев. Всего: {}", comments.size());
@@ -65,5 +64,4 @@ public class AdminCommentServiceImpl implements AdminCommentService {
                     return new NotFoundException("Комментарий с id: " + commentId + " не найден");
                 });
     }
-
 }
