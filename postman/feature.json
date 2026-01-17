@@ -2114,19 +2114,23 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": ""
+			"value": "http://localhost:8080",
+			"type": "string"
 		},
 		{
 			"key": "uid",
-			"value": ""
+			"value": 1,
+			"type": "number"
 		},
 		{
 			"key": "eid",
-			"value": ""
+			"value": 1,
+			"type": "number"
 		},
 		{
 			"key": "comid",
-			"value": ""
+			"value": 1,
+			"type": "number"
 		},
 		{
 			"key": "response",
