@@ -31,7 +31,8 @@ public class Comment {
     private User author;
 
     @Column(name = "created_on")
-    LocalDateTime createdOn;
+    @Builder.Default
+    LocalDateTime createdOn  = LocalDateTime.now();
 
     @Column(name = "likes_count")
     @Builder.Default
