@@ -18,7 +18,7 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    String text;
+    private String text;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
@@ -31,7 +31,12 @@ public class Comment {
     private User author;
 
     @Column(name = "created_on")
-    LocalDateTime createdOn;
+    @Builder.Default
+    LocalDateTime createdOn  = LocalDateTime.now();
+
+    @Column(name = "likes_count")
+    @Builder.Default
+    private Integer likesCount = 0;
 
     @Override
     public boolean equals(Object o) {
