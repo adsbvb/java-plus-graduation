@@ -1,0 +1,99 @@
+server:
+  port: 8080
+
+#spring:
+#  cloud:
+#    gateway:
+#      discovery:
+#        locator:
+#          enabled: true
+#          lower-case-service-id: true
+#      routes:
+#        - id: main-service-public-category
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/categories/**
+#
+#        - id: main-service-public-events-comment
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/events/*/comments
+#
+#        - id: main-service-public-compilation
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/compilations/**
+#
+#        - id: main-service-public-event
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/events/**
+#
+#        - id: main-service-private-comment
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/users/*/events/*/comments/**
+#
+#        - id: main-service-private-event
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/users/*/events/**
+#
+#        - id: main-service-private-request
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/users/*/requests/**
+#
+#        - id: main-service-admin-category
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/admin/categories/**
+#
+#        - id: main-service-admin-comment
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/admin/comments/**
+#
+#        - id: main-service-admin-compilation
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/admin/compilations/**
+#
+#        - id: main-service-admin-event
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/admin/events/**
+#
+#        - id: main-service-admin-user
+#          uri: lb://main-service
+#          predicates:
+#            - Path=/admin/users/**
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: main-service
+          uri: lb://main-service
+          predicates:
+            - Path=/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+      base-path: /actuator
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+  info:
+    env:
+      enabled: true
