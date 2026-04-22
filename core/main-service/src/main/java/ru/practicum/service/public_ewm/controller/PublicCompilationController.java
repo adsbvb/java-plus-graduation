@@ -22,7 +22,6 @@ public class PublicCompilationController {
     @GetMapping
     public List<CompilationDto> getCompilationsByParam(
             @RequestParam(value = "pinned", required = false) Boolean pinned,
-            @RequestParam(value = "categories", required = false) String categories, // run POSTMAN test ???
             @RequestParam(value = "from", defaultValue = "0") Integer from,
             @RequestParam(value = "size", defaultValue = "10") Integer size,
             HttpServletRequest request) {
