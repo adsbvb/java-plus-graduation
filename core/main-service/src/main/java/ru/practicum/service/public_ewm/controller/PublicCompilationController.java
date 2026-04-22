@@ -20,10 +20,12 @@ public class PublicCompilationController {
     PublicCompilationService compilationService;
 
     @GetMapping
-    public List<CompilationDto> getCompilationsByParam(@RequestParam(value = "pinned", required = false) Boolean pinned,
-                                                       @RequestParam(value = "from", defaultValue = "0") Integer from,
-                                                       @RequestParam(value = "size", defaultValue = "10") Integer size,
-                                                       HttpServletRequest request) {
+    public List<CompilationDto> getCompilationsByParam(
+            @RequestParam(value = "pinned", required = false) Boolean pinned,
+            @RequestParam(value = "categories", required = false) String categories, // run POSTMAN test ???
+            @RequestParam(value = "from", defaultValue = "0") Integer from,
+            @RequestParam(value = "size", defaultValue = "10") Integer size,
+            HttpServletRequest request) {
         log.info("PublicCompilationController: вызов эндпоинта GET /compilation с параметрами --" +
                 " pinned: {}, from: {}, size: {}", pinned, from, size);
 
