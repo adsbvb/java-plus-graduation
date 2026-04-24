@@ -46,7 +46,6 @@ public class StatClient {
                         .queryParam("start", start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("end", end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("unique", unique)
-                        // Добавляем uris только если они есть
                         .queryParam("uris", urisParam)
                         .build()
                 )
@@ -71,7 +70,6 @@ public class StatClient {
                         .queryParam("start", start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("end", end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("unique", unique)
-                        // Добавляем uris только если они есть
                         .queryParam("uris", urisParam)
                         .build()
                 )
@@ -85,6 +83,7 @@ public class StatClient {
             Boolean unique
     ) {
         LocalDateTime end = LocalDateTime.now();
+
         String urisParam = (uris != null && !uris.isEmpty())
                 ? String.join(",", uris)
                 : null;
@@ -95,7 +94,6 @@ public class StatClient {
                         .queryParam("start", start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("end", end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .queryParam("unique", unique)
-                        // Добавляем uris только если они есть
                         .queryParam("uris", urisParam)
                         .build()
                 )
