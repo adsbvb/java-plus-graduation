@@ -6,80 +6,56 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: false
       routes:
         - id: main-service-public-categories
           uri: lb://main-service
           predicates:
             - Path=/categories/**
-          order: 1
-
         - id: main-service-public-compilations
           uri: lb://main-service
           predicates:
             - Path=/compilations/**
-          order: 1
-
         - id: main-service-public-events-comments
           uri: lb://main-service
           predicates:
             - Path=/events/*/comments/**
-          order: 1
-
         - id: main-service-public-events
           uri: lb://main-service
           predicates:
-            - Path=/events/**, /event/**
-          order: 2
-
+            - Path=/events/**
         - id: main-service-private-comments
           uri: lb://main-service
           predicates:
             - Path=/users/*/events/*/comments/**
-          order: 1
-
         - id: main-service-private-events
           uri: lb://main-service
           predicates:
             - Path=/users/*/events/**
-          order: 1
-
         - id: main-service-private-requests
           uri: lb://main-service
           predicates:
             - Path=/users/*/requests/**
-          order: 1
-
         - id: main-service-admin-categories
           uri: lb://main-service
           predicates:
             - Path=/admin/categories/**
-          order: 1
-
         - id: main-service-admin-comments
           uri: lb://main-service
           predicates:
             - Path=/admin/comments/**
-          order: 1
-
         - id: main-service-admin-compilations
           uri: lb://main-service
           predicates:
             - Path=/admin/compilations/**
-          order: 1
-
         - id: main-service-admin-events
           uri: lb://main-service
           predicates:
             - Path=/admin/events/**
-          order: 1
-
         - id: main-service-admin-users
           uri: lb://main-service
           predicates:
             - Path=/admin/users/**
-          order: 1
 
 logging:
   level:
@@ -103,6 +79,10 @@ management:
     web:
       exposure:
         include: health,info,gateway
+      base-path: /actuator
   endpoint:
+    health:
+      enabled: true
+      show-details: always
     gateway:
       enabled: true

@@ -2,11 +2,13 @@ package ru.practicum.client;
 
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.dto.request.StatHitRequestDto;
 import ru.practicum.dto.response.HitsCounterResponseDto;
 
@@ -26,6 +28,7 @@ public class StatClient {
     private static final String STATS_ENDPOINT = "/stats";
 
     private static final LocalDateTime VERY_PAST = LocalDateTime.of(2000, 1, 1, 0, 0);
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public StatClient(DiscoveryClient discoveryClient, RetryTemplate retryTemplate) {
         this.discoveryClient = discoveryClient;
@@ -48,7 +51,13 @@ public class StatClient {
 
     private URI makeUri(String path) {
         ServiceInstance instance = retryTemplate.execute(cxt -> getInstance());
-        return URI.create("http://" + instance.getHost() + ":" + instance.getPort() + path);
+        return UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(instance.getHost())
+                .port(instance.getPort())
+                .path(path)
+                .build()
+                .toUri();
     }
 
     public ResponseEntity<Void> hit(StatHitRequestDto dto) {
@@ -67,58 +76,33 @@ public class StatClient {
             List<String> uris,
             Boolean unique
     ) {
-        URI baseUri = makeUri(STATS_ENDPOINT);
+        ServiceInstance instance = retryTemplate.execute(cxt -> getInstance());
 
-        String urisParam = (uris != null && !uris.isEmpty())
-                ? String.join(",", uris)
-                : null;
+        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(instance.getHost())
+                .port(instance.getPort())
+                .path(STATS_ENDPOINT)
+                .queryParam("start", start.format(FORMATTER))
+                .queryParam("end", end.format(FORMATTER))
+                .queryParam("unique", unique);
 
-        String fullUrl = String.format("http://%s:%d%s?start=%s&end=%s&unique=%s",
-                baseUri.getHost(),
-                baseUri.getPort(),
-                STATS_ENDPOINT,
-                start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                unique);
-
-        if (urisParam != null) {
-            fullUrl += "&uris=" + urisParam;
+        if (uris != null && !uris.isEmpty()) {
+            builder.queryParam("uris", String.join(",", uris));
         }
 
+        URI uri = builder.build().encode().toUri();
+
         return restClient.get()
-                .uri(fullUrl)
+                .uri(uri)
                 .retrieve()
-                .body(new org.springframework.core.ParameterizedTypeReference<List<HitsCounterResponseDto>>() {});
+                .body(new ParameterizedTypeReference<List<HitsCounterResponseDto>>() {});
     }
 
     public List<HitsCounterResponseDto> getHits(
             List<String> uris,
             Boolean unique
     ) {
-        LocalDateTime start = VERY_PAST;
-        LocalDateTime end = LocalDateTime.now();
-
-        String urisParam = (uris != null && !uris.isEmpty())
-                ? String.join(",", uris)
-                : null;
-
-        URI baseUri = makeUri(STATS_ENDPOINT);
-
-        String fullUrl = String.format("http://%s:%d%s?start=%s&end=%s&unique=%s",
-                baseUri.getHost(),
-                baseUri.getPort(),
-                STATS_ENDPOINT,
-                start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                unique);
-
-        if (urisParam != null) {
-            fullUrl += "&uris=" + urisParam;
-        }
-
-        return restClient.get()
-                .uri(fullUrl)
-                .retrieve()
-                .body(new org.springframework.core.ParameterizedTypeReference<List<HitsCounterResponseDto>>() {});
+        return getHits(VERY_PAST, LocalDateTime.now(), uris, unique);
     }
 }
