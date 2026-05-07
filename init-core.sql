@@ -1,0 +1,9 @@
+CREATE DATABASE events;
+CREATE DATABASE users;
+CREATE DATABASE requests;
+CREATE DATABASE comments;
+
+GRANT ALL PRIVILEGES ON DATABASE events TO commerce_user;
+GRANT ALL PRIVILEGES ON DATABASE users TO commerce_user;
+GRANT ALL PRIVILEGES ON DATABASE requests TO commerce_user;
+GRANT ALL PRIVILEGES ON DATABASE comments TO commerce_user;

@@ -8,54 +8,61 @@ spring:
         locator:
           enabled: false
       routes:
-        - id: main-service-public-categories
-          uri: lb://main-service
+        # Админ: события, категории, подборки (event-service)
+        - id: admin-event-service
+          uri: lb://event-service
           predicates:
-            - Path=/categories/**
-        - id: main-service-public-compilations
-          uri: lb://main-service
-          predicates:
-            - Path=/compilations/**
-        - id: main-service-public-events-comments
-          uri: lb://main-service
-          predicates:
-            - Path=/events/*/comments/**
-        - id: main-service-public-events
-          uri: lb://main-service
-          predicates:
-            - Path=/events/**
-        - id: main-service-private-comments
-          uri: lb://main-service
-          predicates:
-            - Path=/users/*/events/*/comments/**
-        - id: main-service-private-events
-          uri: lb://main-service
-          predicates:
-            - Path=/users/*/events/**
-        - id: main-service-private-requests
-          uri: lb://main-service
-          predicates:
-            - Path=/users/*/requests/**
-        - id: main-service-admin-categories
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/categories/**
-        - id: main-service-admin-comments
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/comments/**
-        - id: main-service-admin-compilations
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/compilations/**
-        - id: main-service-admin-events
-          uri: lb://main-service
-          predicates:
-            - Path=/admin/events/**
-        - id: main-service-admin-users
-          uri: lb://main-service
+            - Path=/admin/events/**, /admin/categories/**, /admin/compilations/**
+          metadata:
+            service: event-service
+
+        # Админ: пользователи (user-service)
+        - id: admin-user-service
+          uri: lb://user-service
           predicates:
             - Path=/admin/users/**
+          metadata:
+            service: user-service
+
+        # Админ: комментарии (comment-service)
+        - id: admin-comment-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/admin/comments/**
+          metadata:
+            service: comment-service
+
+        # Приватные: события (event-service)
+        - id: private-event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/users/*/events/**
+          metadata:
+            service: event-service
+
+        # Приватные: запросы на участие (request-service)
+        - id: private-request-service
+          uri: lb://request-service
+          predicates:
+            - Path=/users/*/requests/**
+          metadata:
+            service: request-service
+
+        # Приватные: комментарии (comment-service)
+        - id: private-comment-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/users/*/events/*/comments/**
+          metadata:
+            service: comment-service
+
+        # Публичные: события, категории, подборки (event-service)
+        - id: public-event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/events/**, /categories/**, /compilations/**
+          metadata:
+            service: event-service
 
 logging:
   level:
