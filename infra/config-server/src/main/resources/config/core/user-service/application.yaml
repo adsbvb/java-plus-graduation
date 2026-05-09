@@ -1,0 +1,46 @@
+server:
+  port: 0
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: always
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/users
+    username: user
+    password: password
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    ru.practicum: DEBUG
+    ru.practicum.client: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.web.client: DEBUG
+    feign: DEBUG
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.apache.catalina: INFO
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: full
