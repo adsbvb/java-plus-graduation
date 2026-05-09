@@ -24,13 +24,13 @@ public class InternalUserController {
     }
 
     @GetMapping("/user/{id}")
-    UserShortDto getUserByIdInternal(
+    public UserShortDto getUserByIdInternal(
             @PathVariable(name = "id") Long userId) {
         return userService.getByIdInternal(userId);
     }
 
     @GetMapping("/by-ids")
-    List<UserShortDto> getUsersInternal(
+    public List<UserShortDto> getUsersInternal(
             @RequestParam("userId") List<Long> userIds) {
         return userService.getUsersByIdsInternal(userIds);
     }

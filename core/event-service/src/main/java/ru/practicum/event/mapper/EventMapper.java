@@ -102,9 +102,6 @@ public class EventMapper {
     }
 
     public EventFullDto toEventFullDto(Event event, UserShortDto user, Long views) {
-        if (user == null) {
-            // Получить инициатора через userClient
-        }
         return EventFullDto.builder()
                 .annotation(event.getAnnotation())
                 .categoryDto(CategoryMapper.toCategoryDto(event.getCategory()))

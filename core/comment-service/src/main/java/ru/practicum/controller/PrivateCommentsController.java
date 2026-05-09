@@ -2,19 +2,15 @@ package ru.practicum.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.service.CommentService;
 import ru.practicum.dto.CommentDto;
 import ru.practicum.dto.CommentRequestDto;
+import ru.practicum.service.CommentService;
 
-@Slf4j
 @Controller
-@Validated
 @RequiredArgsConstructor
 @RequestMapping(path = "/users/{userId}/events/{eventId}/comments")
 public class PrivateCommentsController {

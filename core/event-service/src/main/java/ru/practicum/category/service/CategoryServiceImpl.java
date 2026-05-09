@@ -22,10 +22,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
-@Slf4j
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final StatClient statClient;
@@ -33,6 +32,7 @@ public class CategoryServiceImpl implements CategoryService {
     // Admin
 
     @Override
+    @Transactional
     public CategoryDto createCategory(NewCategoryDto dto) {
         log.info("Попытка создания новой категории с названием: {}", dto.getName());
 
@@ -52,6 +52,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long catId) {
         log.info("Попытка удаления категории с id={}", catId);
 
@@ -75,6 +76,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryDto updateCategory(Long catId, CategoryDto dto) {
         log.info("Попытка обновления категории с id={}. Новое название: {}", catId, dto.getName());
 

@@ -16,13 +16,13 @@ public class InternalRequestController {
     private final RequestService service;
 
     @GetMapping("/event/{eventId}")
-    List<ParticipationRequestDto> getRequestsByEventIdInternal(
+    public List<ParticipationRequestDto> getRequestsByEventIdInternal(
             @PathVariable(name = "eventId") Long eventId) {
         return service.getRequestsByEventId(eventId);
     }
 
     @GetMapping("/by-ids")
-    List<ParticipationRequestDto> getRequestsByIdsInternal(
+    public List<ParticipationRequestDto> getRequestsByIdsInternal(
             @RequestParam("ids") List<Long> ids
     ) {
         return service.getRequestsByIds(ids);

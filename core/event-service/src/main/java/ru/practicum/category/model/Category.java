@@ -23,7 +23,7 @@ public class Category {
     private Long id;
 
     @NotBlank
-    String name;
+    private String name;
 
     @OneToMany(mappedBy = "category")
     @ToString.Exclude

@@ -20,7 +20,7 @@ public class Request {
     private Long id;
 
     @Builder.Default
-    LocalDateTime created = LocalDateTime.now();
+    private LocalDateTime created = LocalDateTime.now();
 
     @Column(name = "event_id")
     private Long eventId;
