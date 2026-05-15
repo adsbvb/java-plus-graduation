@@ -6,10 +6,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.EventFullDto;
 import ru.practicum.dto.EventSearchParams;
 import ru.practicum.dto.EventShortDto;
@@ -47,9 +44,27 @@ public class PublicEventController {
     }
 
     @GetMapping("/{id}")
-    public EventFullDto getEventById(@PathVariable(value = "id") Long id, HttpServletRequest request) {
-        log.info("PublicEventController: вызов эндпоинта GET events/{}", id);
+    public EventFullDto getEventById(
+            @PathVariable(value = "id") Long eventId,
+            @RequestHeader("X-EWM-USER-ID") Long userId
+    ) {
+        log.info("PublicEventController: вызов эндпоинта GET events/{} от пользователя {}", eventId, userId);
+        return service.getById(eventId, userId);
+    }
 
-        return service.getById(id, request);
+    @GetMapping("/recommendations")
+    public List<EventShortDto> getRecommendations(
+            @RequestHeader("X-EWM-USER-ID") Long userId,
+            @RequestParam(defaultValue = "10") int maxResults
+    ) {
+        return service.getRecommendationsForUser(userId, maxResults);
+    }
+
+    @PutMapping("/{eventId}/like")
+    public void likeEvent(
+            @PathVariable(value = "eventId") Long eventId,
+            @RequestHeader("X-EWM-USER-ID") Long userId
+    ) {
+        service.likeEvent(eventId, userId);
     }
 }

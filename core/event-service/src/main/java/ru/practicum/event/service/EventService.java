@@ -23,7 +23,7 @@ public interface EventService {
                                   Integer size,
                                   HttpServletRequest request);
 
-    EventFullDto getById(Long id, HttpServletRequest request);
+    EventFullDto getById(Long eventId, Long userId);
 
     List<EventShortDto> getEventsByOwner(Long userId, Integer from, Integer size);
 
@@ -38,7 +38,11 @@ public interface EventService {
     EventRequestStatusUpdateResult updateStatusRequest(Long userId, Long eventId,
                                                        EventRequestStatusUpdateRequest updateRequest);
 
-    EventFullDto getEventByIdIternal(Long eventId, UserShortDto userDto);
+    EventFullDto getEventByIdIternal(Long eventId);
 
     void incrementConfirmedRequestsInternal(Long eventId, int count);
+
+    List<EventShortDto> getRecommendationsForUser(Long userId, int maxResults);
+
+    void likeEvent(Long eventId, Long userId);
 }

@@ -60,5 +60,5 @@ public class EventFullDto {
     @NotBlank(message = "Поле 'title' не может быт пустым")
     String title;
 
-    Long views;
+    Double rating;
 }

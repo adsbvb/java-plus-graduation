@@ -1,0 +1,43 @@
+server:
+  port: 0
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: aggregator-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 100
+      fetch-max-wait: 1000
+    producer:
+      retries: 3
+      acks: all
+      batch-size: 16384
+      properties:
+        linger.ms: 10
+    listener:
+      batch-listener: true
+      concurrency: 1
+      poll-timeout: 5000
+
+kafka:
+  topic:
+    user-actions: stats.user-actions.v1
+    similarity: stats.events-similarity.v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      enabled: true
+
+logging:
+  level:
+    ru.practicum: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN

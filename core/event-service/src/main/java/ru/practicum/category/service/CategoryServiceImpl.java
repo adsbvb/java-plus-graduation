@@ -7,7 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.client.StatClient;
+import ru.practicum.client.stats_server.StatClient;
 import ru.practicum.dto.Constant;
 import ru.practicum.dto.request.StatHitRequestDto;
 import ru.practicum.category.dal.CategoryRepository;

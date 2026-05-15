@@ -13,19 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.dal.CategoryRepository;
 import ru.practicum.category.model.Category;
 import ru.practicum.client.RequestClient;
-import ru.practicum.client.StatClient;
 import ru.practicum.client.UserClient;
+import ru.practicum.client.analyzer.AnalyzerGrpcClient;
 import ru.practicum.dto.*;
-import ru.practicum.dto.response.HitsCounterResponseDto;
 import ru.practicum.enums.State;
 import ru.practicum.enums.Status;
 import ru.practicum.event.dal.EventRepository;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
+import ru.practicum.ewm.stats.proto.RecommendedEventProto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
-import ru.practicum.statistics.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -38,10 +37,9 @@ import java.util.stream.Collectors;
 public class PrivateEventHandler {
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
-    private final StatClient statClient;
     private final UserClient userClient;
     private final RequestClient requestClient;
-    private final StatisticsService statisticsService;
+    private final AnalyzerGrpcClient analyzerGrpcClient;
 
     private static final String URI_EVENT_ENDPOINT = "/events/";
 
@@ -57,16 +55,18 @@ public class PrivateEventHandler {
             return Collections.emptyList();
         }
 
-        Map<Long, UserShortDto> userMap = getUsersMap(eventPage.getContent());
+        List<Event> events = eventPage.getContent();
 
-        List<EventShortDto> dtos = eventPage.getContent().stream()
+        Map<Long, UserShortDto> userMap = getUsersMap(eventPage.getContent());
+        Map<Long, Double> ratingMap = getRatingsForEvents(events);
+
+        List<EventShortDto> dtos = events.stream()
                 .map(event -> {
                     UserShortDto user = userMap.get(event.getInitiatorId());
-                    return EventMapper.toEventShortDto(event, user);
+                    Double rating = ratingMap.getOrDefault(event.getId(), 0.0);
+                    return EventMapper.toEventShortDto(event, user, rating);
                 })
                 .collect(Collectors.toList());
-
-        addViewsToEvents(dtos);
 
         log.info("Для пользователя id={} найдено {} событий", userId, dtos.size());
         return dtos;
@@ -84,7 +84,7 @@ public class PrivateEventHandler {
         Event event = eventRepository.save(EventMapper.newEventDtoToEvent(newEventDto, userId, category));
 
         log.info("Событие успешно добавлено, id: {}", event.getId());
-        return EventMapper.eventToEventFullDto(event, user);
+        return EventMapper.toEventFullDto(event, user, 0.0);
     }
 
     public EventFullDto getInfoEvent(Long userId, Long eventId) {
@@ -93,12 +93,9 @@ public class PrivateEventHandler {
         Event event = getEventById(eventId);
         UserShortDto user = getUserById(userId);
 
-        EventFullDto eventFullDto = EventMapper.eventToEventFullDto(event, user);
+        Double rating = analyzerGrpcClient.getEventRating(eventId);
 
-        Long views = getViewsForEvent(eventId);
-        eventFullDto.setViews(views);
-
-        return eventFullDto;
+        return EventMapper.toEventFullDto(event, user, rating);
     }
 
     @Transactional
@@ -125,9 +122,11 @@ public class PrivateEventHandler {
         updatedEvent = eventRepository.save(updatedEvent);
 
         UserShortDto user = getUserById(userId);
+        Double rating = analyzerGrpcClient.getEventRating(eventId);
 
         log.info("Событие {} успешно изменено", updatedEvent.getId());
-        return EventMapper.eventToEventFullDto(updatedEvent, user);
+
+        return EventMapper.toEventFullDto(updatedEvent, user, rating);
     }
 
     public List<ParticipationRequestDto> getInfoRequest(Long userId, Long eventId) {
@@ -225,45 +224,6 @@ public class PrivateEventHandler {
             log.error("Ошибка при вызове сервиса пользователей: {}", ex.getMessage());
             throw new ServiceException("Ошибка при вызове сервиса пользователей", ex);
         }
-    }
-
-    private void addViewsToEvents(List<EventShortDto> events) {
-        if (events.isEmpty()) {
-            return;
-        }
-
-        Map<Long, Long> viewsMap = getViewsForEventIds(
-                events.stream().map(EventShortDto::getId).collect(Collectors.toSet())
-        );
-
-        events.forEach(event -> {
-            Long views = viewsMap.getOrDefault(event.getId(), 0L);
-            event.setViews(views);
-        });
-    }
-
-    private Map<Long, Long> getViewsForEventIds(Set<Long> eventIds) {
-        if (eventIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<String> uris = eventIds.stream()
-                .map(id -> URI_EVENT_ENDPOINT + id)
-                .collect(Collectors.toList());
-
-        Map<String, Long> viewsByUri = statisticsService.getViewsByUris(uris, false);
-
-        return eventIds.stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        id -> viewsByUri.getOrDefault(URI_EVENT_ENDPOINT + id, 0L)
-                ));
-    }
-
-    private Long getViewsForEvent(Long eventId) {
-        List<HitsCounterResponseDto> hitsCounter = statClient.getHits(
-                List.of(URI_EVENT_ENDPOINT + eventId), true);
-        return hitsCounter.isEmpty() ? 0L : hitsCounter.getFirst().getHits();
     }
 
     private void validateEventOwnership(Event event, Long userId) {
@@ -371,6 +331,29 @@ public class PrivateEventHandler {
         } catch (FeignException ex) {
             log.error("Ошибка при обновлении запросов: {}", ex.getMessage());
             throw new ServiceException("Ошибка при обновлении запросов", ex);
+        }
+    }
+
+    private Map<Long, Double> getRatingsForEvents(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .toList();
+
+        try {
+            List<RecommendedEventProto> ratings = analyzerGrpcClient.getInteractionsCount(eventIds);
+            return ratings.stream()
+                    .collect(Collectors.toMap(
+                            RecommendedEventProto::getEventId,
+                            RecommendedEventProto::getScore,
+                            (v1, v2) -> v1
+                    ));
+        } catch (Exception e) {
+            log.error("Ошибка при получении рейтингов из Analyzer: {}", e.getMessage());
+            return Collections.emptyMap();
         }
     }
 }
