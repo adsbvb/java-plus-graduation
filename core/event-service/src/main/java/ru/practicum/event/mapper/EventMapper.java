@@ -12,20 +12,8 @@ import java.util.Optional;
 
 @UtilityClass
 public class EventMapper {
-    public EventShortDto toEventShortDto(Event event, UserShortDto user) {
-        return EventShortDto.builder()
-                .annotation(event.getAnnotation())
-                .categoryDto(CategoryMapper.toCategoryDto(event.getCategory()))
-                .confirmedRequests(event.getConfirmedRequests())
-                .eventDate(event.getEventDate())
-                .id(event.getId())
-                .initiatorDto(user)
-                .paid(event.getPaid())
-                .title(event.getTitle())
-                .build();
-    }
 
-    public EventShortDto toEventShortDtoWithViews(Event event, UserShortDto user, Long views) {
+    public EventShortDto toEventShortDto(Event event, UserShortDto user, Double rating) {
         return EventShortDto.builder()
                 .annotation(event.getAnnotation())
                 .categoryDto(CategoryMapper.toCategoryDto(event.getCategory()))
@@ -35,7 +23,7 @@ public class EventMapper {
                 .initiatorDto(user)
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
     }
 
@@ -51,26 +39,6 @@ public class EventMapper {
                 .participantLimit(newEventDto.getParticipantLimit())
                 .requestModeration(newEventDto.getRequestModeration())
                 .title(newEventDto.getTitle())
-                .build();
-    }
-
-    public EventFullDto eventToEventFullDto(Event event, UserShortDto user) {
-        return EventFullDto.builder()
-                .annotation(event.getAnnotation())
-                .categoryDto(CategoryMapper.toCategoryDto(event.getCategory()))
-                .eventDate(event.getEventDate())
-                .confirmedRequests(event.getConfirmedRequests())
-                .createdOn(event.getCreatedOn())
-                .description(event.getDescription())
-                .locationDto(LocationMapper.locationToLocationDto(event.getLocation()))
-                .initiatorDto(user)
-                .state(event.getState())
-                .id(event.getId())
-                .paid(event.getPaid())
-                .participantLimit(event.getParticipantLimit())
-                .publishedOn(event.getPublishedOn())
-                .requestModeration(event.getRequestModeration())
-                .title(event.getTitle())
                 .build();
     }
 
@@ -101,7 +69,7 @@ public class EventMapper {
         return event;
     }
 
-    public EventFullDto toEventFullDto(Event event, UserShortDto user, Long views) {
+    public EventFullDto toEventFullDto(Event event, UserShortDto user, Double rating) {
         return EventFullDto.builder()
                 .annotation(event.getAnnotation())
                 .categoryDto(CategoryMapper.toCategoryDto(event.getCategory()))
@@ -118,14 +86,7 @@ public class EventMapper {
                 .publishedOn(event.getPublishedOn())
                 .requestModeration(event.getRequestModeration())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
-    }
-
-    public static Long extractIdFromUri(String uri) {
-        String[] parts = uri.split("/");
-        String id = parts[parts.length - 1];
-
-        return Long.parseLong(id);
     }
 }

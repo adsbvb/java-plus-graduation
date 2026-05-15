@@ -1,4 +1,4 @@
-package ru.practicum.client;
+package ru.practicum.client.stats_server;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

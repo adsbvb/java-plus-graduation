@@ -7,19 +7,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.client.StatClient;
 import ru.practicum.client.UserClient;
-import ru.practicum.dto.*;
-import ru.practicum.dto.request.StatHitRequestDto;
+import ru.practicum.client.analyzer.AnalyzerGrpcClient;
+import ru.practicum.client.stats_server.StatClient;
 import ru.practicum.compilation.dal.CompilationRepository;
-import ru.practicum.event.dal.EventRepository;
-import ru.practicum.event.mapper.EventMapper;
-import ru.practicum.exception.ConflictException;
-import ru.practicum.exception.NotFoundException;
 import ru.practicum.compilation.mapper.CompilationMapper;
 import ru.practicum.compilation.model.Compilation;
+import ru.practicum.dto.*;
+import ru.practicum.dto.request.StatHitRequestDto;
+import ru.practicum.event.dal.EventRepository;
+import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
-import ru.practicum.statistics.StatisticsService;
+import ru.practicum.ewm.stats.proto.RecommendedEventProto;
+import ru.practicum.exception.ConflictException;
+import ru.practicum.exception.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,11 +33,9 @@ import java.util.stream.Collectors;
 public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
-    private final StatisticsService statisticsService;
     private final StatClient statClient;
     private final UserClient userClient;
-
-    private static final String URI_EVENT_ENDPOINT = "/events/";
+    private final AnalyzerGrpcClient analyzerGrpcClient;
 
     @Override
     @Transactional
@@ -57,7 +56,7 @@ public class CompilationServiceImpl implements CompilationService {
 
         Compilation savedCompilation = compilationRepository.save(compilation);
 
-        Set<EventShortDto> eventShortDtos = getEventShortDto(savedCompilation.getEvents(), false);
+        Set<EventShortDto> eventShortDtos = getEventShortDto(savedCompilation.getEvents());
 
         return CompilationMapper.toCompilationDto(savedCompilation, eventShortDtos);
     }
@@ -104,7 +103,7 @@ public class CompilationServiceImpl implements CompilationService {
 
         Compilation savedCompilation = compilationRepository.save(compilation);
 
-        Set<EventShortDto> eventShortDtos = getEventShortDto(savedCompilation.getEvents(), false);
+        Set<EventShortDto> eventShortDtos = getEventShortDto(savedCompilation.getEvents());
 
         return CompilationMapper.toCompilationDto(savedCompilation, eventShortDtos);
     }
@@ -127,7 +126,7 @@ public class CompilationServiceImpl implements CompilationService {
             return Collections.emptyList();
         }
 
-        Map<Long, EventShortDto> eventShortDtoMap = getEventShortDtoMap(allEvents, false);
+        Map<Long, EventShortDto> eventShortDtoMap = getEventShortDtoMap(allEvents);
 
         List<CompilationDto> result = new ArrayList<>();
         for (Compilation comp : compilationsList) {
@@ -140,12 +139,6 @@ public class CompilationServiceImpl implements CompilationService {
             result.add(CompilationMapper.toCompilationDto(comp, eventDtos));
         }
 
-        statClient.hit(new StatHitRequestDto(Constant.SERVICE_POSTFIX,
-                request.getRequestURI(),
-                request.getRemoteAddr(),
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern(Constant.DATE_TIME_FORMAT)))
-        );
-
         return result;
     }
 
@@ -157,7 +150,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = compilationRepository.findById(compId)
                 .orElseThrow(() -> new NotFoundException(String.format("Подборка с id: %d не найдена", compId)));
 
-        Set<EventShortDto> eventShortDtoList = getEventShortDto(compilation.getEvents(), false);
+        Set<EventShortDto> eventShortDtoList = getEventShortDto(compilation.getEvents());
 
         statClient.hit(new StatHitRequestDto(Constant.SERVICE_POSTFIX,
                 request.getRequestURI(),
@@ -168,7 +161,9 @@ public class CompilationServiceImpl implements CompilationService {
         return CompilationMapper.toCompilationDto(compilation, eventShortDtoList);
     }
 
-    private Map<Long, EventShortDto> getEventShortDtoMap(Set<Event> events, boolean unique) {
+    // Private
+
+    private Map<Long, EventShortDto> getEventShortDtoMap(Set<Event> events) {
         if (events == null || events.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -178,26 +173,13 @@ public class CompilationServiceImpl implements CompilationService {
                 .distinct()
                 .toList();
 
-        List<UserShortDto> users;
-        try {
-            users = userClient.getUsersInternal(initiatorIds);
-        } catch (FeignException ex) {
-            throw new ServiceException("Ошибка при вызове сервиса пользователей", ex);
-        }
+        Map<Long, UserShortDto> userMap = getUsersMap(initiatorIds);
 
-        if (users == null || users.isEmpty()) {
-            log.warn("Не удалось получить пользователей для событий");
-            return Collections.emptyMap();
-        }
-
-        Map<Long, UserShortDto> userMap = users.stream()
-                .collect(Collectors.toMap(UserShortDto::getId, u -> u));
-
-        List<String> uris = events.stream()
-                .map(event -> URI_EVENT_ENDPOINT + event.getId())
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
                 .toList();
 
-        Map<String, Long> viewsByUri = statisticsService.getViewsByUris(uris, unique);
+        Map<Long, Double> ratingMap = getRatingsFromAnalyzer(eventIds);
 
         return events.stream()
                 .map(event -> {
@@ -206,20 +188,58 @@ public class CompilationServiceImpl implements CompilationService {
                         log.warn("Инициатор не найден для события {}", event.getId());
                         return null;
                     }
-                    Long views = viewsByUri.getOrDefault(URI_EVENT_ENDPOINT + event.getId(), 0L);
-                    EventShortDto eventShortDto = EventMapper.toEventShortDtoWithViews(event, user, views);
+                    Double rating = ratingMap.getOrDefault(event.getId(), 0.0);
+                    EventShortDto eventShortDto = EventMapper.toEventShortDto(event, user, rating);
                     return new AbstractMap.SimpleEntry<>(event.getId(), eventShortDto);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Set<EventShortDto> getEventShortDto(Set<Event> events, boolean unique) {
+    private Set<EventShortDto> getEventShortDto(Set<Event> events) {
         if (events == null || events.isEmpty()) {
             return Collections.emptySet();
         }
 
-        Map<Long, EventShortDto> eventShortDtoMap = getEventShortDtoMap(events, unique);
+        Map<Long, EventShortDto> eventShortDtoMap = getEventShortDtoMap(events);
         return new HashSet<>(eventShortDtoMap.values());
+    }
+
+    private Map<Long, UserShortDto> getUsersMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<UserShortDto> users = userClient.getUsersInternal(userIds);
+            if (users == null || users.isEmpty()) {
+                log.warn("Не удалось получить пользователей для ID: {}", userIds);
+                return Collections.emptyMap();
+            }
+            return users.stream()
+                    .collect(Collectors.toMap(UserShortDto::getId, u -> u));
+        } catch (FeignException ex) {
+            log.error("Ошибка при вызове сервиса пользователей: {}", ex.getMessage());
+            throw new ServiceException("Ошибка при вызове сервиса пользователей", ex);
+        }
+    }
+
+    private Map<Long, Double> getRatingsFromAnalyzer(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<RecommendedEventProto> ratings = analyzerGrpcClient.getInteractionsCount(eventIds);
+            return ratings.stream()
+                    .collect(Collectors.toMap(
+                            RecommendedEventProto::getEventId,
+                            RecommendedEventProto::getScore,
+                            (v1, v2) -> v1
+                    ));
+        } catch (Exception e) {
+            log.error("Ошибка при получении рейтингов из Analyzer: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 }

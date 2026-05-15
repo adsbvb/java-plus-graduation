@@ -1,4 +1,4 @@
-package ru.practicum.client;
+package ru.practicum.client.stats_server;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;

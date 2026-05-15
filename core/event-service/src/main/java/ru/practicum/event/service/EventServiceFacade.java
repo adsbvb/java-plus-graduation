@@ -3,7 +3,6 @@ package ru.practicum.event.service;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.*;
 import ru.practicum.enums.EventSort;
 import ru.practicum.event.service.handler.AdminEventHandler;
@@ -48,8 +47,8 @@ public class EventServiceFacade implements EventService {
     }
 
     @Override
-    public EventFullDto getById(Long id, HttpServletRequest request) {
-        return publicEventHandler.getById(id, request);
+    public EventFullDto getById(Long eventId, Long userId) {
+        return publicEventHandler.getById(eventId, userId);
     }
 
     @Override
@@ -83,12 +82,22 @@ public class EventServiceFacade implements EventService {
     }
 
     @Override
-    public EventFullDto getEventByIdIternal(Long eventId, UserShortDto userDto) {
-        return internalEventService.getEventById(eventId, userDto);
+    public EventFullDto getEventByIdIternal(Long eventId) {
+        return internalEventService.getEventById(eventId);
     }
 
     @Override
     public void incrementConfirmedRequestsInternal(Long eventId, int count) {
         internalEventService.incrementConfirmedRequests(eventId, count);
+    }
+
+    @Override
+    public List<EventShortDto> getRecommendationsForUser(Long userId, int maxResults) {
+        return publicEventHandler.getRecommendationsForUser(userId, maxResults);
+    }
+
+    @Override
+    public void likeEvent(Long eventId, Long userId) {
+        publicEventHandler.likeEvent(eventId, userId);
     }
 }

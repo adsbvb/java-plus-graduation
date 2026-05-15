@@ -34,7 +34,7 @@ public class PrivateCommentHandler {
     @Transactional
     public CommentDto createComment(Long userId, Long eventId, CommentRequestDto commentRequestDto) {
         UserShortDto user = getUserById(userId);
-        EventFullDto event = getEventById(eventId, user);
+        EventFullDto event = getEventById(eventId);
 
         if (event.getState().equals(State.PENDING)) {
             throw new NotFoundException("Такого события не найдено.");
@@ -51,7 +51,7 @@ public class PrivateCommentHandler {
     @Transactional
     public CommentDto updateComment(Long userId, Long eventId, Long commentId, CommentRequestDto commentRequestDto) {
         UserShortDto user = getUserById(userId);
-        EventFullDto event = getEventById(eventId, user);
+        EventFullDto event = getEventById(eventId);
 
         if (event.getInitiatorDto().getId().equals(userId)) {
             throw new ConflictException("Нельзя комментировать свое событие.");
@@ -67,7 +67,7 @@ public class PrivateCommentHandler {
     @Transactional
     public void deleteComment(Long userId, Long eventId, Long commentId) {
         UserShortDto user = getUserById(userId);
-        EventFullDto event = getEventById(eventId, user);
+        EventFullDto event = getEventById(eventId);
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Комментарий не найден."));
@@ -111,9 +111,9 @@ public class PrivateCommentHandler {
         }
     }
 
-    private EventFullDto getEventById(Long eventId, UserShortDto user) {
+    private EventFullDto getEventById(Long eventId) {
         try {
-            return eventClient.getEventInternal(eventId, user);
+            return eventClient.getEventInternal(eventId);
         } catch (FeignException.NotFound ex) {
             log.warn(ex.getMessage());
             throw new NotFoundException("Событие не найдено, id: " + eventId);

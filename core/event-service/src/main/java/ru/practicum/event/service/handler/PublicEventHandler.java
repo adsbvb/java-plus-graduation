@@ -8,23 +8,21 @@ import org.hibernate.service.spi.ServiceException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-import ru.practicum.client.StatClient;
 import ru.practicum.client.UserClient;
-import ru.practicum.dto.Constant;
+import ru.practicum.client.analyzer.AnalyzerGrpcClient;
+import ru.practicum.client.collector.CollectorGrpcClient;
 import ru.practicum.dto.EventFullDto;
 import ru.practicum.dto.EventShortDto;
 import ru.practicum.dto.UserShortDto;
-import ru.practicum.dto.request.StatHitRequestDto;
-import ru.practicum.dto.response.HitsCounterResponseDto;
 import ru.practicum.enums.EventSort;
 import ru.practicum.event.dal.EventRepository;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
+import ru.practicum.ewm.stats.proto.RecommendedEventProto;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -37,8 +35,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PublicEventHandler {
     private final EventRepository eventRepository;
-    private final StatClient statClient;
     private final UserClient userClient;
+
+    private final CollectorGrpcClient collectorGrpcClient;
+    private final AnalyzerGrpcClient analyzerGrpcClient;
 
     private static final String URI_EVENT_ENDPOINT = "/events/";
     private static final int MAX_YEARS_RANGE = 1000;
@@ -74,44 +74,100 @@ public class PublicEventHandler {
 
         Map<Long, UserShortDto> userMap = getUsersMap(eventsList);
 
-        Map<Long, Long> viewsMap = getViewsForEvents(eventsList, start, end);
+        Map<Long, Double> ratingMap = getRatingsForEvents(eventsList);
 
         List<EventShortDto> result = eventsList.stream()
                 .map(event -> {
                     UserShortDto user = userMap.get(event.getInitiatorId());
-                    Long views = viewsMap.getOrDefault(event.getId(), 0L);
-                    return EventMapper.toEventShortDtoWithViews(event, user, views);
+                    Double rating = ratingMap.getOrDefault(event.getId(), 0.0);
+                    return EventMapper.toEventShortDto(event, user, rating);
                 })
                 .toList();
 
         if (sort == EventSort.VIEWS) {
             result = result.stream()
-                    .sorted(Comparator.comparingLong(EventShortDto::getViews).reversed())
+                    .sorted(Comparator.comparingDouble(EventShortDto::getRating).reversed())
                     .toList();
         }
-
-        sendHitToStats(request);
 
         log.info("Найдено {} событий", result.size());
         return result;
     }
 
-    public EventFullDto getById(Long id, HttpServletRequest request) {
-        log.info("PublicEventHandler: поиск события с id: {}", id);
+    public EventFullDto getById(Long eventId, Long userId) {
+        log.info("PublicEventHandler: поиск события с eventId: {}", eventId);
 
-        Event event = eventRepository.findPublishedById(id)
-                .orElseThrow(() -> new NotFoundException(String.format("Событие с id: %d не найдено", id)));
-
+        Event event = eventRepository.findPublishedById(eventId)
+                .orElseThrow(() -> new NotFoundException(String.format("Событие с eventId: %d не найдено", eventId)));
         UserShortDto initiator = getUserById(event.getInitiatorId());
+        if (userId != null) {
+            collectorGrpcClient.sendView(userId, eventId);
+        }
+        Double rating = analyzerGrpcClient.getEventRating(eventId);
 
-        sendHitToStats(request);
+        return EventMapper.toEventFullDto(event, initiator, rating);
+    }
 
-        Long views = getViewsForEvent(event);
+    public List<EventShortDto> getRecommendationsForUser(Long userId, int maxResults) {
+        log.info("Получения рекомендаций для пользователя: userId={}, maxResults={}", userId, maxResults);
 
-        return EventMapper.toEventFullDto(event, initiator, views);
+        List<RecommendedEventProto> recommendations = analyzerGrpcClient
+                .getRecommendationsForUser(userId, maxResults);
+
+        if (recommendations.isEmpty()) {
+            log.debug("Рекомендации не найдены, userId={}", userId);
+            return List.of();
+        }
+
+        List<Long> eventIds = recommendations.stream()
+                .map(RecommendedEventProto::getEventId)
+                .collect(Collectors.toList());
+
+        List<Event> events = eventRepository.findAllById(eventIds);
+
+        Map<Long, UserShortDto> userMap = getUsersMap(events);
+        Map<Long, Double> ratingMap = getRatingsForEvents(events);
+
+        List<EventShortDto> result = events.stream()
+                .map(event -> {
+                    UserShortDto user = userMap.get(event.getInitiatorId());
+                    Double rating = ratingMap.getOrDefault(event.getId(), 0.0);
+                    return EventMapper.toEventShortDto(event, user, rating);
+                })
+                .toList();
+
+        log.info("Получено {} рекомендаций для пользователя id={}", result.size(), userId);
+        return result;
+    }
+
+    public void likeEvent(Long eventId, Long userId) {
+        collectorGrpcClient.sendLike(eventId, userId);
+        log.info("Пользователь id={} поставил лайк событию id={}", userId, eventId);
     }
 
     // Private
+
+    private Map<Long, Double> getRatingsForEvents(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .toList();
+        try {
+            List<RecommendedEventProto> ratings = analyzerGrpcClient.getInteractionsCount(eventIds);
+            return ratings.stream()
+                    .collect(Collectors.toMap(
+                            RecommendedEventProto::getEventId,
+                            RecommendedEventProto::getScore,
+                            (v1, v2) -> v1
+                    ));
+
+        } catch (Exception e) {
+            log.error("Ошибка при получении рейтингов из Analyzer: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
 
     private LocalDateTime normalizeStartDate(LocalDateTime rangeStart) {
         return rangeStart != null ? rangeStart : LocalDateTime.now();
@@ -143,54 +199,6 @@ public class PublicEventHandler {
         }
     }
 
-    private Map<Long, Long> getViewsForEvents(List<Event> events, LocalDateTime start, LocalDateTime end) {
-        List<String> eventUris = events.stream()
-                .map(event -> URI_EVENT_ENDPOINT + event.getId())
-                .toList();
-
-        log.debug("Запрос статистики для {} событий за период {} - {}", events.size(), start, end);
-
-        List<HitsCounterResponseDto> hitsCounterList;
-        try {
-            hitsCounterList = statClient.getHits(start, end, eventUris, false);
-        } catch (FeignException ex) {
-            log.error("Ошибка при вызове сервиса статистики: {}", ex.getMessage());
-            return Collections.emptyMap();
-        }
-
-        log.debug("Получено {} записей статистики", hitsCounterList.size());
-
-        return hitsCounterList.stream()
-                .collect(Collectors.toMap(
-                        hitsCounter -> EventMapper.extractIdFromUri(hitsCounter.getUri()),
-                        HitsCounterResponseDto::getHits,
-                        (v1, v2) -> v1
-                ));
-    }
-
-    private Long getViewsForEvent(Event event) {
-        LocalDateTime start = event.getPublishedOn();
-        LocalDateTime end = LocalDateTime.now();
-
-        if (start == null) {
-            log.warn("Событие {} еще не опубликовано, просмотров 0", event.getId());
-            return 0L;
-        }
-
-        try {
-            List<HitsCounterResponseDto> hitsCounter = statClient.getHits(
-                    start,
-                    end,
-                    List.of(URI_EVENT_ENDPOINT + event.getId()),
-                    true);
-
-            return hitsCounter.isEmpty() ? 0L : hitsCounter.getFirst().getHits();
-        } catch (FeignException ex) {
-            log.error("Ошибка при получении статистики для события {}: {}", event.getId(), ex.getMessage());
-            return 0L;
-        }
-    }
-
     private UserShortDto getUserById(Long userId) {
         try {
             return userClient.getUserByIdInternal(userId);
@@ -200,19 +208,6 @@ public class PublicEventHandler {
         } catch (FeignException ex) {
             log.error("Ошибка при вызове сервиса пользователей: {}", ex.getMessage());
             throw new ServiceException("Ошибка при вызове сервиса пользователей", ex);
-        }
-    }
-
-    private void sendHitToStats(HttpServletRequest request) {
-        try {
-            statClient.hit(new StatHitRequestDto(
-                    Constant.SERVICE_POSTFIX,
-                    request.getRequestURI(),
-                    request.getRemoteAddr(),
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(Constant.DATE_TIME_FORMAT))
-            ));
-        } catch (FeignException ex) {
-            log.error("Ошибка при отправке статистики запроса: {}", ex.getMessage());
         }
     }
 }

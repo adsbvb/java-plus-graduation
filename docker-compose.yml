@@ -6,14 +6,16 @@ services:
       - "6543:5432"
     environment:
       - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=user
-      - POSTGRES_DB=stats
+      - POSTGRES_USER=username
+      # - POSTGRES_DB=stats
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d stats" ]
+      test: [ "CMD-SHELL", "pg_isready -U username -d stats" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
+    volumes:
+      - ./init-stats.sql:/docker-entrypoint-initdb.d/init-stats.sql
     networks:
       - ewm-network
 
@@ -24,10 +26,10 @@ services:
       - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=user
+      - POSTGRES_USER=username
       - POSTGRES_DB=ewm-main
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d ewm-main" ]
+      test: [ "CMD-SHELL", "pg_isready -U username -d ewm-main" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -36,6 +38,56 @@ services:
       - ./init-core.sql:/docker-entrypoint-initdb.d/init-core.sql
     networks:
       - ewm-network
+
+  kafka:
+    image: confluentinc/confluent-local:7.4.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    networks:
+      - ewm-network
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      CLUSTER_ID: 'K0EA9p0yEe6MkAAAAkKsEg'
+
+  kafka-init-topics:
+    image: confluentinc/confluent-local:7.4.0
+    container_name: kafka-init-topics
+    depends_on:
+      - kafka
+    networks:
+      - ewm-network
+    command: "bash -c \
+                'kafka-topics --create --topic stats.user-actions.v1 \
+                    --partitions 1 --replication-factor 1 --if-not-exists \
+                    --bootstrap-server kafka:29092 &&
+                kafka-topics --create --topic stats.events-similarity.v1 \
+                    --partitions 1 --replication-factor 1 --if-not-exists \
+                    --bootstrap-server kafka:29092'"
+    init: true
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8008:8080"
+    networks:
+      - ewm-network
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: 'local'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:29092'
+    depends_on:
+      - kafka
 
 networks:
   ewm-network:

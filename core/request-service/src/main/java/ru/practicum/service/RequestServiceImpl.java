@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.client.EventClient;
 import ru.practicum.client.UserClient;
+import ru.practicum.client.collector.CollectorGrpcClient;
 import ru.practicum.dal.RequestRepository;
 import ru.practicum.dto.EventFullDto;
 import ru.practicum.dto.ParticipationRequestDto;
@@ -29,6 +30,7 @@ public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final UserClient userClient;
     private final EventClient eventClient;
+    private final CollectorGrpcClient collectorGrpcClient;
 
     @Override
     public List<ParticipationRequestDto> getInfoOnParticipation(Long userId) {
@@ -49,7 +51,7 @@ public class RequestServiceImpl implements RequestService {
         log.info("Добавление запроса от текущего пользователя id={} на участие в событии id={}", userId, eventId);
 
         UserShortDto user = getUserById(userId);
-        EventFullDto event = getEventById(eventId, user);
+        EventFullDto event = getEventById(eventId);
 
         if (event.getInitiatorDto().getId().equals(userId)) {
             log.warn("Инициатор события не может добавить запрос на участие в своём событии");
@@ -89,6 +91,14 @@ public class RequestServiceImpl implements RequestService {
                 .eventId(eventId)
                 .status(initialStatus)
                 .build();
+
+        try {
+            collectorGrpcClient.sendRegister(userId, eventId);
+            log.debug("В Collector отправлено сообщение о регистрации, userId={}, eventId={}", userId, eventId);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            throw new ServiceException("Ошибка при отправке сообщения в Collector", ex);
+        }
 
         return RequestMapper.toRequestDto(requestRepository.save(request));
     }
@@ -160,9 +170,9 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
-    private EventFullDto getEventById(Long eventId, UserShortDto user) {
+    private EventFullDto getEventById(Long eventId) {
         try {
-            return eventClient.getEventInternal(eventId, user);
+            return eventClient.getEventInternal(eventId);
         } catch (FeignException.NotFound ex) {
             log.warn(ex.getMessage());
             throw new NotFoundException("Событие не найдено, id: " + eventId);
